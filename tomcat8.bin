@@ -16,6 +16,7 @@ if [ -r "$TOMCAT_CFG" ]; then
   . $TOMCAT_CFG
 fi
 
+NAME="$(basename $0)"
 # Get instance specific config file
 if [ -r "/etc/sysconfig/${NAME}" ]; then
     . /etc/sysconfig/${NAME}
