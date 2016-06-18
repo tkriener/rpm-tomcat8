@@ -30,6 +30,7 @@ Source2:    %{name}.sysconfig
 Source3:    %{name}.logrotate
 Source4:    %{name}.conf
 #Requires:   jdk
+Requires:   jpackage-utils
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 %description
