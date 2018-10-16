@@ -25,6 +25,7 @@ Source3:    %{name}.logrotate
 Source4:    %{name}.conf
 Requires:   java
 Requires:   jpackage-utils
+Requires:   policycoreutils-python
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 %description
@@ -134,6 +135,18 @@ getent passwd %{tomcat_user} >/dev/null || /usr/sbin/useradd --comment "Tomcat 8
 %config(noreplace) %{_sysconfdir}/%{name}/*
 
 %post
+semanage fcontext -a -t tomcat_exec_t '%{tomcat_home}/bin(/.*)?\.sh' 2>/dev/null || :
+restorecon -R %{tomcat_home}/bin || :
+semanage fcontext -a -t tomcat_unit_file_t '%{_unitdir}/%{name}.service' 2>/dev/null || :
+restorecon -R %{_unitdir}/%{name}.service || :
+semanage fcontext -a -t tomcat_var_lib_t '%{tomcat_user_home}(/.*)?' 2>/dev/null || :
+restorecon -R %{tomcat_user_home} || :
+semanage fcontext -a -t tomcat_cache_t '%{tomcat_cache_home}(/.*)?' 2>/dev/null || :
+restorecon -R %{tomcat_cache_home} || :
+semanage fcontext -a -t tomcat_log_t '/var/log/%{name}(/.*)?' 2>/dev/null || :
+restorecon -R /var/log/%{name} || :
+semanage fcontext -a -t tomcat_run_t '/var/run/%{name}(/.*)?' 2>/dev/null || :
+restorecon -R /var/run/%{name} || :
 systemctl enable %{name}
 
 %preun
@@ -143,7 +156,15 @@ if [ $1 = 0 ]; then
 fi
 
 %postun
-if [ $1 -ge 1 ]; then
+if [ $1 -eq 0 ] ; then  # final removal
+  semanage fcontext -d -t tomcat_exec_t '%{tomcat_home}/bin(/.*)?\.sh' 2>/dev/null || :
+  semanage fcontext -d -t tomcat_unit_file_t '%{_unitdir}/%{name}.service' 2>/dev/null || :
+  semanage fcontext -d -t tomcat_var_lib_t '%{tomcat_user_home}(/.*)?' 2>/dev/null || :
+  semanage fcontext -d -t tomcat_cache_t '%{tomcat_cache_home}(/.*)?' 2>/dev/null || :
+  semanage fcontext -d -t tomcat_log_t '/var/log/%{name}(/.*)?' 2>/dev/null || :
+  semanage fcontext -d -t tomcat_run_t '/var/run/%{name}(/.*)?' 2>/dev/null || :
+fi
+if [ $1 -ge 1 ]; then # update
   systemctl daemon-reload
   systemctl enable %{name}
   systemctl start %{name} > /dev/null 2>&1
