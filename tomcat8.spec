@@ -1,13 +1,7 @@
 # To Build:
 #
-# sudo yum -y install rpmdevtools && rpmdev-setuptree
+# vagrant up / vagrant provision
 #
-# wget https://raw.github.com/nmilford/rpm-tomcat8/master/tomcat8.spec -O ~/rpmbuild/SPECS/tomcat8.spec
-# wget https://raw.github.com/nmilford/rpm-tomcat8/master/tomcat8.init -O ~/rpmbuild/SOURCES/tomcat8.init
-# wget https://raw.github.com/nmilford/rpm-tomcat8/master/tomcat8.sysconfig -O ~/rpmbuild/SOURCES/tomcat8.sysconfig
-# wget https://raw.github.com/nmilford/rpm-tomcat8/master/tomcat8.logrotate -O ~/rpmbuild/SOURCES/tomcat8.logrotate
-# wget http://www.motorlogy.com/apache/tomcat/tomcat-7/v7.0.55/bin/apache-tomcat-7.0.55.tar.gz -O ~/rpmbuild/SOURCES/apache-tomcat-7.0.55.tar.gz
-# rpmbuild -bb ~/rpmbuild/SPECS/tomcat8.spec
 
 %define __jar_repack %{nil}
 %define tomcat_home /usr/share/tomcat8
@@ -18,18 +12,18 @@
 
 Summary:    Apache Servlet/JSP Engine, RI for Servlet 3.1/JSP 2.3 API
 Name:       tomcat8
-Version:    8.0.24
+Version:    8.0.53
 BuildArch:  noarch
 Release:    1
 License:    Apache Software License
 Group:      Networking/Daemons
 URL:        http://tomcat.apache.org/
 Source0:    apache-tomcat-%{version}.tar.gz
-Source1:    %{name}.init
-Source2:    %{name}.sysconfig
+Source1:    %{name}.service
+Source2:    %{name}.sh
 Source3:    %{name}.logrotate
 Source4:    %{name}.conf
-#Requires:   jdk
+Requires:   java
 Requires:   jpackage-utils
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
@@ -45,7 +39,7 @@ a collaboration of the best-of-breed developers from around the world.
 We invite you to participate in this open development project. To
 learn more about getting involved, click here.
 
-This package contains the base tomcat installation that depends on Sun's JDK and not
+This package contains the base tomcat installation that depends on Oracle JDK and not
 on JPP packages.
 
 %prep
@@ -102,17 +96,12 @@ chmod 775 %{buildroot}/%{tomcat_cache_home}/temp
 chmod 775 %{buildroot}/%{tomcat_cache_home}/work
 cd -
 
-# Drop sbin script
-install -d -m 755 %{buildroot}/%{_sbindir}
-install    -m 755 %_sourcedir/%{name}.bin %{buildroot}/%{_sbindir}/%{name}
+# Create PID-Dir
+install -d -m 755 %{buildroot}/var/run/%{name}
 
-# Drop init script
-install -d -m 755 %{buildroot}/%{_initrddir}
-install    -m 755 %_sourcedir/%{name}.init %{buildroot}/%{_initrddir}/%{name}
-
-# Drop sysconfig script
-install -d -m 755 %{buildroot}/%{_sysconfdir}/sysconfig/
-install    -m 644 %_sourcedir/%{name}.sysconfig %{buildroot}/%{_sysconfdir}/sysconfig/%{name}
+# Drop systemd file
+install -d -m 755 %{buildroot}/%{_unitdir}
+install    -m 744 %_sourcedir/%{name}.service %{buildroot}/%{_unitdir}/%{name}.service
 
 # Drop conf script
 install    -m 644 %_sourcedir/%{name}.conf %{buildroot}/%{_sysconfdir}/%{name}
@@ -131,36 +120,35 @@ getent passwd %{tomcat_user} >/dev/null || /usr/sbin/useradd --comment "Tomcat 8
 %files
 %defattr(-,%{tomcat_user},%{tomcat_group})
 /var/log/%{name}/
+/var/run/%{name}/
 %defattr(-,root,root)
 %{tomcat_user_home}
 %{tomcat_home}
-%{_initrddir}/%{name}
-%{_sbindir}/%{name}
+%{_unitdir}/%{name}.service
 %{_sysconfdir}/logrotate.d/%{name}
 %defattr(-,root,%{tomcat_group})
 %{tomcat_cache_home}
 %{tomcat_cache_home}/temp
 %{tomcat_cache_home}/work
 %{tomcat_user_home}/webapps
-%config(noreplace) %{_sysconfdir}/sysconfig/%{name}
 %config(noreplace) %{_sysconfdir}/%{name}/*
 
 %post
-chkconfig --add %{name}
+systemctl enable %{name}
 
 %preun
 if [ $1 = 0 ]; then
-  service %{name} stop > /dev/null 2>&1
-  chkconfig --del %{name}
+  systemctl stop %{name} > /dev/null 2>&1
+  systemctl disable %{name}
 fi
 
 %postun
 if [ $1 -ge 1 ]; then
-  service %{name} condrestart >/dev/null 2>&1
+  systemctl daemon-reload
+  systemctl enable %{name}
+  systemctl start %{name} > /dev/null 2>&1
 fi
 
 %changelog
-* Thu Sep 4 2014 Edward Bartholomew <edward@bartholomew>
-- 7.0.55
-* Mon Jul 1 2013 Nathan Milford <nathan@milford.io>
-- 7.0.41
+* Tue Oct 16 2018 Initial Version for RHEL7 with systemd
+- 8.0.53

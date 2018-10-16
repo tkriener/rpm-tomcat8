@@ -1,0 +1,20 @@
+# Systemd unit file for tomcat
+[Unit]
+Description=Apache Tomcat Web Application Container
+After=syslog.target network.target
+
+[Service]
+Type=forking
+User=tomcat8
+Group=tomcat8
+PIDFile=/var/run/tomcat8/tomcat8.pid
+ExecStart=/usr/share/tomcat8/bin/startup.sh
+ExecStop=/usr/share/tomcat8/bin/shutdown.sh
+KillMode=process
+Restart=on-failure
+TimeoutSec=300
+SyslogIdentifier=tomcat-%i
+EnvironmentFile=/etc/tomcat8/tomcat8.conf
+
+[Install]
+WantedBy=multi-user.target
