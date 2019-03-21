@@ -15,6 +15,7 @@ Restart=on-failure
 TimeoutSec=300
 SyslogIdentifier=tomcat-%i
 EnvironmentFile=/etc/tomcat8/tomcat8.conf
+RuntimeDirectory=tomcat8
 
 [Install]
 WantedBy=multi-user.target

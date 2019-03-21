@@ -22,9 +22,9 @@ fi
 cp "/vagrant/tomcat8."{service,logrotate,conf} "/root/rpmbuild/SOURCES/"
 cp "/vagrant/tomcat8.spec" "/root/rpmbuild/SPECS/"
 
-if [ ! -f /vagrant/tomcat8-$VERSION-1.noarch.rpm ];
+if [ ! -f /vagrant/tomcat8-$VERSION-$RELEASE.noarch.rpm ];
 then
   cd /root/rpmbuild
   rpmbuild --buildroot "/root/rpmbuild/BUILDROOT" /root/rpmbuild/SPECS/tomcat8.spec -bb
-  cp /root/rpmbuild/RPMS/noarch/tomcat8-$VERSION-1.noarch.rpm /vagrant
+  cp /root/rpmbuild/RPMS/noarch/tomcat8-$VERSION-$RELEASE.noarch.rpm /vagrant
 fi
