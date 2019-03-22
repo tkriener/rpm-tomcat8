@@ -14,7 +14,7 @@ Summary:    Apache Servlet/JSP Engine, RI for Servlet 3.1/JSP 2.3 API
 Name:       tomcat8
 Version:    8.0.53
 BuildArch:  noarch
-Release:    2
+Release:    3
 License:    Apache Software License
 Group:      Networking/Daemons
 URL:        http://tomcat.apache.org/
@@ -126,7 +126,7 @@ getent passwd %{tomcat_user} >/dev/null || /usr/sbin/useradd --comment "Tomcat 8
 %{tomcat_user_home}
 %{tomcat_home}
 %{_unitdir}/%{name}.service
-%{_sysconfdir}/logrotate.d/%{name}
+%config(noreplace) %{_sysconfdir}/logrotate.d/%{name}
 %defattr(-,root,%{tomcat_group})
 %{tomcat_cache_home}
 %{tomcat_cache_home}/temp
@@ -147,13 +147,11 @@ semanage fcontext -a -t tomcat_log_t '/var/log/%{name}(/.*)?' 2>/dev/null || :
 restorecon -R /var/log/%{name} || :
 semanage fcontext -a -t tomcat_run_t '/var/run/%{name}(/.*)?' 2>/dev/null || :
 restorecon -R /var/run/%{name} || :
-systemctl enable %{name}
+# install but don't activate
+%systemd_post %{name}.service
 
 %preun
-if [ $1 = 0 ]; then
-  systemctl stop %{name} > /dev/null 2>&1
-  systemctl disable %{name}
-fi
+%systemd_preun %{name}.service
 
 %postun
 if [ $1 -eq 0 ] ; then  # final removal
@@ -164,12 +162,15 @@ if [ $1 -eq 0 ] ; then  # final removal
   semanage fcontext -d -t tomcat_log_t '/var/log/%{name}(/.*)?' 2>/dev/null || :
   semanage fcontext -d -t tomcat_run_t '/var/run/%{name}(/.*)?' 2>/dev/null || :
 fi
-if [ $1 -ge 1 ]; then # update
-  systemctl daemon-reload
-  systemctl enable %{name}
-  systemctl start %{name} > /dev/null 2>&1
-fi
+%systemd_postun_with_restart %{name}.service 
 
 %changelog
-* Tue Oct 16 2018 Initial Version for RHEL7 with systemd
+* Fri Mar 22 2019 Thomas Kriener <thomas@kriener.de> - 8.0.53-3
+- Rework systemd to prevent enabling if disbaled before
+- Don't replace logrotate-file on update
+
+* Thu Mar 21 2019 Thomas Kriener <thomas@kriener.de> - 8.0.53-2
+- Fix systemd-file to create /var/run/tomcat8 automatically
+
+* Tue Oct 16 2018 Initial Version for RHEL7 with systemd - 8.0.53-1
 - 8.0.53
