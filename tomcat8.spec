@@ -12,9 +12,9 @@
 
 Summary:    Apache Servlet/JSP Engine, RI for Servlet 3.1/JSP 2.3 API
 Name:       tomcat8
-Version:    8.0.53
+Version:    8.5.42
 BuildArch:  noarch
-Release:    3
+Release:    1
 License:    Apache Software License
 Group:      Networking/Daemons
 URL:        http://tomcat.apache.org/
@@ -86,6 +86,9 @@ cd %{buildroot}/%{tomcat_home}/
 ln -s %{_sysconfdir}/%{name} conf
 cd -
 
+# Create Catalina in /etc
+install -d -m 755 %{buildroot}/%{_sysconfdir}/%{name}/Catalina
+
 # Put temp and work to /var/cache and link back.
 install -d -m 775 %{buildroot}%{tomcat_cache_home}
 mv %{buildroot}/%{tomcat_home}/temp %{buildroot}/%{tomcat_cache_home}/
@@ -133,6 +136,8 @@ getent passwd %{tomcat_user} >/dev/null || /usr/sbin/useradd --comment "Tomcat 8
 %{tomcat_cache_home}/work
 %{tomcat_user_home}/webapps
 %config(noreplace) %{_sysconfdir}/%{name}/*
+%defattr(-,%{tomcat_user},%{tomcat_group})
+%{_sysconfdir}/%{name}/Catalina
 
 %post
 semanage fcontext -a -t tomcat_exec_t '%{tomcat_home}/bin(/.*)?\.sh' 2>/dev/null || :
@@ -147,6 +152,8 @@ semanage fcontext -a -t tomcat_log_t '/var/log/%{name}(/.*)?' 2>/dev/null || :
 restorecon -R /var/log/%{name} || :
 semanage fcontext -a -t tomcat_run_t '/var/run/%{name}(/.*)?' 2>/dev/null || :
 restorecon -R /var/run/%{name} || :
+semanage fcontext -a -t tomcat_cache_t '%{_sysconfdir}/%{name}/Catalina(/.*)?' 2>/dev/null || :
+restorecon -R %{_sysconfdir}/%{name}/Catalina || :
 # install but don't activate
 %systemd_post %{name}.service
 
@@ -161,12 +168,17 @@ if [ $1 -eq 0 ] ; then  # final removal
   semanage fcontext -d -t tomcat_cache_t '%{tomcat_cache_home}(/.*)?' 2>/dev/null || :
   semanage fcontext -d -t tomcat_log_t '/var/log/%{name}(/.*)?' 2>/dev/null || :
   semanage fcontext -d -t tomcat_run_t '/var/run/%{name}(/.*)?' 2>/dev/null || :
+  semanage fcontext -d -t tomcat_cache_t '%{_sysconfdir}/%{name}/Catalina(/.*)?' 2>/dev/null || :
 fi
-%systemd_postun_with_restart %{name}.service 
+%systemd_postun_with_restart %{name}.service
 
 %changelog
+* Tue Jun 18 2019 Thomas Kriener <thomas@kriener.de> - 8.5.42-0
+- Use tomcat 8.5.42
+- add /etc/tomcat8/Catalina as Base for $CATALINA_BASE/conf/[enginename]
+
 * Fri Mar 22 2019 Thomas Kriener <thomas@kriener.de> - 8.0.53-3
-- Rework systemd to prevent enabling if disbaled before
+- Rework systemd to prevent enabling if disabled before
 - Don't replace logrotate-file on update
 
 * Thu Mar 21 2019 Thomas Kriener <thomas@kriener.de> - 8.0.53-2
