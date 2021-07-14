@@ -12,7 +12,7 @@
 
 Summary:    Apache Servlet/JSP Engine, RI for Servlet 3.1/JSP 2.3 API
 Name:       tomcat8
-Version:    8.5.63
+Version:    8.5.69
 BuildArch:  noarch
 Release:    0
 License:    Apache Software License
@@ -173,6 +173,10 @@ fi
 %systemd_postun_with_restart %{name}.service
 
 %changelog
+* Tue Jul 13 2021 Thomas Kriener <thomas@kriener.de> - 8.5.69-0
+- Use tomcat 8.5.69
+- Security Fix
+
 * Tue Mar 2 2020 Thomas Kriener <thomas@kriener.de> - 8.5.51-0
 - Use tomcat 8.5.51
 - Security Fix
